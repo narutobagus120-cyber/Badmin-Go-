@@ -9,6 +9,18 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
+    // Menampilkan halaman form login
+    public function showLogin()
+    {
+        return view('auth.login');
+    }
+
+    // Menampilkan halaman form register
+    public function showRegister()
+    {
+        return view('auth.register');
+    }
+
     // Fungsi untuk memproses pendaftaran akun Pelanggan baru
     public function register(Request $request)
     {
@@ -50,7 +62,8 @@ class AuthController extends Controller
                 return redirect()->route('petugas.dashboard');
             }
 
-            return redirect()->route('pelanggan.home');
+            // Jika pelanggan, arahkan ke katalog
+            return redirect()->route('katalog');
         }
 
         return back()->withErrors(['loginError' => 'Email atau password salah!']);
