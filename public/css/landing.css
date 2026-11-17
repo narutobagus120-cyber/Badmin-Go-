@@ -340,6 +340,7 @@ main {
 
 .court-card {
     padding: 6px;
+    cursor: pointer;
 }
 
 .court-image {
@@ -410,5 +411,101 @@ main {
 
     .hero h1 {
         font-size: 28px;
+    }
+}
+
+
+/* POPUP DETAIL LAPANGAN */
+.modal-detail {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    padding: 15px;
+    z-index: 999;
+}
+
+.modal-detail.aktif {
+    display: flex;
+}
+
+/* UKURAN POPUP */
+.modal-content {
+    position: relative;
+    background: white;
+    width: 100%;
+    max-width: 430px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 15px;
+    padding: 12px;
+}
+
+/* GAMBAR LAPANGAN */
+.premium-image {
+    width: 100%;
+    height: 210px;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+/* ISI POPUP */
+.modal-body {
+    padding: 12px 5px 5px;
+}
+
+.modal-body h2 {
+    font-size: 23px;
+    margin: 10px 0 5px;
+}
+
+.modal-body h3 {
+    font-size: 20px;
+    margin-bottom: 12px;
+}
+
+.premium-description {
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 15px;
+}
+
+.detail-info {
+    padding: 12px;
+    border-radius: 10px;
+    background: #eaf2fc;
+}
+
+.detail-info p {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 13px;
+    margin: 9px 0;
+}
+
+.close-modal {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: white;
+    font-size: 23px;
+    cursor: pointer;
+    z-index: 2;
+}
+
+@media (max-width: 480px) {
+    .modal-content {
+        max-width: 350px;
+    }
+
+    .premium-image {
+        height: 170px;
     }
 }

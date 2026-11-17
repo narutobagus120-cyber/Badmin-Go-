@@ -17,4 +17,14 @@ class Lapangan extends Model
         'harga_per_jam',
         'status_lapangan',
     ];
+
+    public function fotoPath(): ?string
+    {
+        return match ($this->nama_lapangan) {
+            'Lapangan Premium' => 'images/lapanganpremium.jpeg',
+            'Lapangan Standard' => 'images/lapanganstandard.jpeg',
+            'Lapangan Family' => 'images/lapanganfamily.jpeg',
+            default => null,
+        };
+    }
 }

@@ -1,4 +1,3 @@
-```blade
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -30,8 +29,16 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-7">
 
-            <div class="bg-[#d6e4f1] rounded-xl min-h-[350px] flex items-center justify-center">
-                <span class="text-slate-500">Foto Lapangan</span>
+            <div class="bg-[#d6e4f1] rounded-xl min-h-[350px] overflow-hidden flex items-center justify-center">
+                @if ($lapangan->fotoPath())
+                    <img
+                        src="{{ asset($lapangan->fotoPath()) }}"
+                        alt="Foto {{ $lapangan->nama_lapangan }}"
+                        class="w-full h-full min-h-[350px] object-cover"
+                    >
+                @else
+                    <span class="text-slate-500">Foto lapangan belum tersedia</span>
+                @endif
             </div>
 
             <div class="bg-white border border-slate-200 rounded-xl p-6">
@@ -137,4 +144,3 @@
     </main>
 </body>
 </html>
-```

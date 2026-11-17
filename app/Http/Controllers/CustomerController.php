@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Lapangan;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use Carbon\Carbon;
 
 class CustomerController extends Controller
 {
@@ -34,48 +34,48 @@ class CustomerController extends Controller
     // ==========================================
     // VALIDASI WAKTU BOOKING
     // ==========================================
-   private function validasiWaktu($tanggal, $jamMulai, $durasi)
-{
-    // Ubah durasi menjadi angka
-    $durasi = (int) $durasi;
+    private function validasiWaktu($tanggal, $jamMulai, $durasi)
+    {
+        // Ubah durasi menjadi angka
+        $durasi = (int) $durasi;
 
-    $mulai = Carbon::createFromFormat('H:i', $jamMulai);
+        $mulai = Carbon::createFromFormat('H:i', $jamMulai);
 
-    // Jam mulai harus tepat pada kelipatan 1 jam
-    if ($mulai->minute !== 0) {
-        throw ValidationException::withMessages([
-            'jam_mulai' => 'Jam mulai harus pada kelipatan satu jam.'
-        ]);
+        // Jam mulai harus tepat pada kelipatan 1 jam
+        if ($mulai->minute !== 0) {
+            throw ValidationException::withMessages([
+                'jam_mulai' => 'Jam mulai harus pada kelipatan satu jam.',
+            ]);
+        }
+
+        // Hitung jam selesai
+        $selesai = $mulai->copy()->addHours($durasi);
+
+        // Jam operasional 08.00 - 22.00
+        if (
+            $mulai->hour < 8 ||
+            $selesai->hour > 22
+        ) {
+            throw ValidationException::withMessages([
+                'durasi' => 'Booking hanya tersedia pukul 08.00 sampai 22.00.',
+            ]);
+        }
+
+        // Tidak boleh booking pada jam yang sudah lewat
+        if (
+            $tanggal === now()->toDateString() &&
+            $mulai->format('H:i') <= now()->format('H:i')
+        ) {
+            throw ValidationException::withMessages([
+                'jam_mulai' => 'Jam yang dipilih sudah lewat.',
+            ]);
+        }
+
+        return [
+            'jam_mulai' => $mulai->format('H:i:s'),
+            'jam_selesai' => $selesai->format('H:i:s'),
+        ];
     }
-
-    // Hitung jam selesai
-    $selesai = $mulai->copy()->addHours($durasi);
-
-    // Jam operasional 08.00 - 22.00
-    if (
-        $mulai->hour < 8 ||
-        $selesai->hour > 22
-    ) {
-        throw ValidationException::withMessages([
-            'durasi' => 'Booking hanya tersedia pukul 08.00 sampai 22.00.'
-        ]);
-    }
-
-    // Tidak boleh booking pada jam yang sudah lewat
-    if (
-        $tanggal === now()->toDateString() &&
-        $mulai->format('H:i') <= now()->format('H:i')
-    ) {
-        throw ValidationException::withMessages([
-            'jam_mulai' => 'Jam yang dipilih sudah lewat.'
-        ]);
-    }
-
-    return [
-        'jam_mulai' => $mulai->format('H:i:s'),
-        'jam_selesai' => $selesai->format('H:i:s'),
-    ];
-}
 
     // ==========================================
     // CEK BENTROK JADWAL
@@ -100,7 +100,7 @@ class CustomerController extends Controller
     // ==========================================
     public function formBooking(Request $request)
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return redirect()->route('login')
                 ->with('error', 'Silakan login terlebih dahulu.');
         }
@@ -112,7 +112,7 @@ class CustomerController extends Controller
                 'required',
                 'date',
                 'after_or_equal:today',
-                'before_or_equal:' . now()->addDays(30)->toDateString(),
+                'before_or_equal:'.now()->addDays(30)->toDateString(),
             ],
 
             'jam_mulai' => 'required|date_format:H:i',
@@ -125,7 +125,7 @@ class CustomerController extends Controller
 
         if ($lapangan->status_lapangan !== 'tersedia') {
             return back()->withInput()->withErrors([
-                'id_lapangan' => 'Lapangan sedang tidak tersedia.'
+                'id_lapangan' => 'Lapangan sedang tidak tersedia.',
             ]);
         }
 
@@ -144,7 +144,7 @@ class CustomerController extends Controller
             $waktu['jam_selesai']
         )) {
             return back()->withInput()->withErrors([
-                'jam_mulai' => 'Jadwal sudah dipesan. Silakan pilih jam lain.'
+                'jam_mulai' => 'Jadwal sudah dipesan. Silakan pilih jam lain.',
             ]);
         }
 
@@ -179,7 +179,7 @@ class CustomerController extends Controller
     // ==========================================
     public function simpanBooking(Request $request)
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return redirect()->route('login');
         }
 
@@ -190,7 +190,7 @@ class CustomerController extends Controller
                 'required',
                 'date',
                 'after_or_equal:today',
-                'before_or_equal:' . now()->addDays(30)->toDateString(),
+                'before_or_equal:'.now()->addDays(30)->toDateString(),
             ],
 
             'jam_mulai' => 'required|date_format:H:i',
@@ -213,7 +213,7 @@ class CustomerController extends Controller
 
             if ($lapangan->status_lapangan !== 'tersedia') {
                 throw ValidationException::withMessages([
-                    'id_lapangan' => 'Lapangan tidak tersedia.'
+                    'id_lapangan' => 'Lapangan tidak tersedia.',
                 ]);
             }
 
@@ -232,7 +232,7 @@ class CustomerController extends Controller
                 $waktu['jam_selesai']
             )) {
                 throw ValidationException::withMessages([
-                    'jam_mulai' => 'Jadwal sudah dipesan. Silakan pilih waktu lain.'
+                    'jam_mulai' => 'Jadwal sudah dipesan. Silakan pilih waktu lain.',
                 ]);
             }
 
@@ -267,7 +267,7 @@ class CustomerController extends Controller
 
         return redirect()
             ->route('pembayaran.index', [
-                'id_booking' => $idBooking
+                'id_booking' => $idBooking,
             ])
             ->with(
                 'success',
@@ -280,7 +280,7 @@ class CustomerController extends Controller
     // ==========================================
     public function pembayaran($id_booking)
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return redirect()->route('login');
         }
 
@@ -298,11 +298,11 @@ class CustomerController extends Controller
             )
             ->first();
 
-        if (!$pemesanan) {
+        if (! $pemesanan) {
             abort(404, 'Data pemesanan tidak ditemukan.');
         }
 
-        $kodeBooking = 'BG-' . date('Y') . '-' .
+        $kodeBooking = 'BG-'.date('Y').'-'.
             str_pad($pemesanan->id_booking, 5, '0', STR_PAD_LEFT);
 
         return view('pembayaran.index', compact(
@@ -312,11 +312,60 @@ class CustomerController extends Controller
     }
 
     // ==========================================
+    // UPLOAD BUKTI PEMBAYARAN
+    // ==========================================
+    public function uploadBuktiPembayaran(Request $request, $id_booking)
+    {
+        if (! Auth::check()) {
+            return redirect()->route('login');
+        }
+
+        $booking = DB::table('booking')
+            ->where('id_booking', $id_booking)
+            ->where('id_user', Auth::id())
+            ->first();
+
+        if (! $booking) {
+            abort(404, 'Data booking tidak ditemukan.');
+        }
+
+        $validated = $request->validate([
+            'metode_pembayaran' => 'required|string|max:30',
+            'bukti_pembayaran' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+        ]);
+
+        $path = $request->file('bukti_pembayaran')->store('bukti_pembayaran', 'public');
+
+        DB::table('pembayaran')->updateOrInsert(
+            ['id_booking' => $id_booking],
+            [
+                'tanggal_pembayaran' => now(),
+                'metode_pembayaran' => $validated['metode_pembayaran'],
+                'bukti_pembayaran' => $path,
+                'status_pembayaran' => 'menunggu',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+
+        DB::table('booking')
+            ->where('id_booking', $id_booking)
+            ->update([
+                'status_booking' => 'menunggu',
+                'updated_at' => now(),
+            ]);
+
+        return redirect()
+            ->route('pemesanan.status', ['id_booking' => $id_booking])
+            ->with('success', 'Bukti pembayaran berhasil dikirim. Menunggu verifikasi petugas.');
+    }
+
+    // ==========================================
     // STATUS PEMESANAN
     // ==========================================
     public function statusPemesanan($id_booking)
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return redirect()->route('login');
         }
 
@@ -336,11 +385,11 @@ class CustomerController extends Controller
             )
             ->first();
 
-        if (!$pemesanan) {
+        if (! $pemesanan) {
             abort(404, 'Data pemesanan tidak ditemukan.');
         }
 
-        $kodeBooking = 'BG-' . date('Y') . '-' .
+        $kodeBooking = 'BG-'.date('Y').'-'.
             str_pad($pemesanan->id_booking, 5, '0', STR_PAD_LEFT);
 
         return view('customer.pemesanan.status', compact(
@@ -354,7 +403,7 @@ class CustomerController extends Controller
     // ==========================================
     public function buktiPemesanan($id_booking)
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return redirect()->route('login');
         }
 
@@ -376,11 +425,11 @@ class CustomerController extends Controller
             )
             ->first();
 
-        if (!$pemesanan) {
+        if (! $pemesanan) {
             abort(404, 'Bukti pemesanan tidak ditemukan.');
         }
 
-        $kodeBooking = 'BG-' . date('Y') . '-' .
+        $kodeBooking = 'BG-'.date('Y').'-'.
             str_pad($pemesanan->id_booking, 5, '0', STR_PAD_LEFT);
 
         return view('customer.pemesanan.bukti', compact(
@@ -394,7 +443,7 @@ class CustomerController extends Controller
     // ==========================================
     public function riwayat()
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return redirect()->route('login');
         }
 
