@@ -13,8 +13,16 @@
     <header class="navbar">
         <div class="logo">BADMIN <span>GO.</span></div>
         <nav>
-            <a href="{{ route('login') }}" class="btn-login">Masuk</a>
-            <a href="{{ route('register') }}" class="btn-register">Daftar</a>
+            @auth
+                <a href="{{ route('katalog') }}" class="btn-login">Katalog</a>
+                <form action="{{ route('logout') }}" method="POST">
+                    @csrf
+                    <button type="submit" class="btn-register">Keluar</button>
+                </form>
+            @else
+                <a href="{{ route('login') }}" class="btn-login">Masuk</a>
+                <a href="{{ route('register') }}" class="btn-register">Daftar</a>
+            @endauth
         </nav>
     </header>
 

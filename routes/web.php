@@ -22,8 +22,8 @@ Route::post('/register', [AuthController::class, 'register']);
 // Halaman Sisi Pelanggan & Katalog (Badmin-Go)
 // Menggunakan CustomerController untuk halaman katalog
 Route::get('/katalog', [CustomerController::class, 'katalog'])->name('katalog');
-Route::get('/booking/{id}', [CustomerController::class, 'detailBooking'])->name('booking.detail');
 Route::middleware(RequireLoginForBooking::class)->group(function () {
+    Route::get('/booking/{id}', [CustomerController::class, 'detailBooking'])->name('booking.detail');
     Route::post('/booking/form', [CustomerController::class, 'formBooking'])->name('booking.form');
     Route::post('/booking/simpan', [CustomerController::class, 'simpanBooking'])->name('booking.simpan');
 });

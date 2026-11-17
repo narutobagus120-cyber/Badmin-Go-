@@ -27,10 +27,13 @@
                 Riwayat
             </a>
 
-            <a href="{{ route('login') }}"
-               class="bg-blue-600 hover:bg-blue-700 px-3 md:px-5 py-2 rounded-md">
-                Akun
-            </a>
+            <form action="{{ route('logout') }}" method="POST">
+                @csrf
+                <button type="submit"
+                        class="bg-blue-600 hover:bg-blue-700 px-3 md:px-5 py-2 rounded-md">
+                    Keluar
+                </button>
+            </form>
         </div>
     </nav>
 

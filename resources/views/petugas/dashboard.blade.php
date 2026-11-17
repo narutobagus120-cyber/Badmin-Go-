@@ -11,7 +11,10 @@
         <h1 class="font-bold text-lg">BADMIN <span class="text-blue-500">GO</span></h1>
         <div class="flex gap-3 text-sm">
             <a href="{{ route('katalog') }}" class="bg-blue-600 px-4 py-2 rounded-md">Katalog</a>
-            <a href="{{ route('login') }}" class="bg-slate-700 px-4 py-2 rounded-md">Logout</a>
+            <form action="{{ route('logout') }}" method="POST">
+                @csrf
+                <button type="submit" class="bg-slate-700 px-4 py-2 rounded-md">Keluar</button>
+            </form>
         </div>
     </nav>
 

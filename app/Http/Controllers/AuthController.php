@@ -56,6 +56,7 @@ class AuthController extends Controller
         if ($user && Hash::check($request->password, $user->password)) {
             // Jika password cocok, daftarkan session login
             Auth::login($user);
+            $request->session()->regenerate();
 
             // Cek role untuk mengarahkan halaman
             if ($user->role === 'petugas') {
@@ -76,6 +77,7 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login');
+        return redirect()->route('login')
+            ->with('success', 'Anda berhasil keluar dari akun.');
     }
 }

@@ -26,6 +26,13 @@
                class="bg-blue-700 px-5 py-2 rounded-md">
                 Riwayat
             </a>
+
+            <form action="{{ route('logout') }}" method="POST">
+                @csrf
+                <button type="submit" class="bg-blue-600 px-5 py-2 rounded-md">
+                    Keluar
+                </button>
+            </form>
         </div>
     </nav>
 

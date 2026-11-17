@@ -56,7 +56,27 @@
             transition: .3s;
         }
 
+        .nav-menu form {
+            margin: 0;
+        }
+
+        .nav-menu button {
+            background: #1976f3;
+            color: white;
+            border: 0;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: .3s;
+        }
+
         .nav-menu a:hover {
+            background: #075bc9;
+        }
+
+        .nav-menu button:hover {
             background: #075bc9;
         }
 
@@ -166,6 +186,11 @@
                 font-size: 9px;
             }
 
+            .nav-menu button {
+                padding: 8px 12px;
+                font-size: 9px;
+            }
+
             .main {
                 padding: 25px 15px;
             }
@@ -201,7 +226,10 @@
         <div class="nav-menu">
             <a href="{{ url('/') }}">Beranda</a>
             <a href="{{ route('booking.riwayat') }}">Riwayat</a>
-            <a href="#">Akun</a>
+            <form action="{{ route('logout') }}" method="POST">
+                @csrf
+                <button type="submit">Keluar</button>
+            </form>
         </div>
     </nav>
 
