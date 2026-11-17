@@ -67,6 +67,12 @@
                         </div>
                     @endif
 
+                    @if(session('error'))
+                        <div class="bg-amber-900/40 text-amber-300 border border-amber-700 rounded-lg p-3 text-xs mb-5">
+                            {{ session('error') }}
+                        </div>
+                    @endif
+
                     <!-- PESAN ERROR -->
                     @if($errors->any())
                         <div class="bg-red-900/40 text-red-300 border border-red-700 rounded-lg p-3 text-xs mb-5">

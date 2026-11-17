@@ -17,7 +17,14 @@
         <div class="flex gap-3 text-sm">
             <a href="{{ route('katalog') }}" class="bg-blue-600 px-5 py-2 rounded-md">Beranda</a>
             <a href="{{ route('booking.riwayat') }}" class="bg-blue-600 px-5 py-2 rounded-md">Riwayat</a>
-            <a href="#" class="bg-blue-600 px-5 py-2 rounded-md">Akun</a>
+            @auth
+                <form action="{{ route('logout') }}" method="POST">
+                    @csrf
+                    <button type="submit" class="bg-blue-600 px-5 py-2 rounded-md">Keluar</button>
+                </form>
+            @else
+                <a href="{{ route('login') }}" class="bg-blue-600 px-5 py-2 rounded-md">Akun</a>
+            @endauth
         </div>
     </nav>
 

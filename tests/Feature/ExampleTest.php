@@ -16,4 +16,18 @@ class ExampleTest extends TestCase
 
         $response->assertStatus(200);
     }
+
+    public function test_booking_actions_redirect_guests_to_login(): void
+    {
+        $message = 'Anda harus login terlebih dahulu untuk melanjutkan booking.';
+
+        $this->followingRedirects()
+            ->post('/booking/form')
+            ->assertOk()
+            ->assertSee($message);
+
+        $this->post('/booking/simpan')
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('error', $message);
+    }
 }
