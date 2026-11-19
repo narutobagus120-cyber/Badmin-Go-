@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Lapangan;
 use Carbon\Carbon;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -14,9 +16,9 @@ class CustomerController extends Controller
     // ==========================================
     // KATALOG LAPANGAN
     // ==========================================
-    public function katalog()
+    public function katalog(): View
     {
-        $lapangan = Lapangan::all();
+        $lapangan = Lapangan::where('status_lapangan', 'tersedia')->get();
 
         return view('customer.katalog', compact('lapangan'));
     }
@@ -24,81 +26,29 @@ class CustomerController extends Controller
     // ==========================================
     // DETAIL LAPANGAN
     // ==========================================
-    public function detailBooking($id)
+    public function detailBooking(int $id): View
     {
         $lapangan = Lapangan::findOrFail($id);
+        abort_if($lapangan->status_lapangan !== 'tersedia', 404);
 
-        return view('customer.booking_detail', compact('lapangan'));
-    }
+        $jadwal = DB::table('jadwal')
+            ->join('lapangan', 'jadwal.id_lapangan', '=', 'lapangan.id_lapangan')
+            ->where('jadwal.id_lapangan', $lapangan->id_lapangan)
+            ->where('lapangan.status_lapangan', 'tersedia')
+            ->where('jadwal.status_jadwal', 'tersedia')
+            ->whereDate('tanggal', '>=', now()->toDateString())
+            ->whereDate('tanggal', '<=', now()->addDays(30)->toDateString())
+            ->orderBy('tanggal')
+            ->orderBy('jam_mulai')
+            ->get();
 
-    // ==========================================
-    // VALIDASI WAKTU BOOKING
-    // ==========================================
-    private function validasiWaktu($tanggal, $jamMulai, $durasi)
-    {
-        // Ubah durasi menjadi angka
-        $durasi = (int) $durasi;
-
-        $mulai = Carbon::createFromFormat('H:i', $jamMulai);
-
-        // Jam mulai harus tepat pada kelipatan 1 jam
-        if ($mulai->minute !== 0) {
-            throw ValidationException::withMessages([
-                'jam_mulai' => 'Jam mulai harus pada kelipatan satu jam.',
-            ]);
-        }
-
-        // Hitung jam selesai
-        $selesai = $mulai->copy()->addHours($durasi);
-
-        // Jam operasional 08.00 - 22.00
-        if (
-            $mulai->hour < 8 ||
-            $selesai->hour > 22
-        ) {
-            throw ValidationException::withMessages([
-                'durasi' => 'Booking hanya tersedia pukul 08.00 sampai 22.00.',
-            ]);
-        }
-
-        // Tidak boleh booking pada jam yang sudah lewat
-        if (
-            $tanggal === now()->toDateString() &&
-            $mulai->format('H:i') <= now()->format('H:i')
-        ) {
-            throw ValidationException::withMessages([
-                'jam_mulai' => 'Jam yang dipilih sudah lewat.',
-            ]);
-        }
-
-        return [
-            'jam_mulai' => $mulai->format('H:i:s'),
-            'jam_selesai' => $selesai->format('H:i:s'),
-        ];
-    }
-
-    // ==========================================
-    // CEK BENTROK JADWAL
-    // ==========================================
-    private function cekBentrok(
-        $idLapangan,
-        $tanggal,
-        $jamMulai,
-        $jamSelesai
-    ) {
-        return DB::table('jadwal')
-            ->where('id_lapangan', $idLapangan)
-            ->whereDate('tanggal', $tanggal)
-            ->where('status_jadwal', 'dipesan')
-            ->whereTime('jam_mulai', '<', $jamSelesai)
-            ->whereTime('jam_selesai', '>', $jamMulai)
-            ->exists();
+        return view('customer.booking_detail', compact('lapangan', 'jadwal'));
     }
 
     // ==========================================
     // FORM BOOKING
     // ==========================================
-    public function formBooking(Request $request)
+    public function formBooking(Request $request): View|RedirectResponse
     {
         if (! Auth::check()) {
             return redirect()->route('login')
@@ -106,69 +56,44 @@ class CustomerController extends Controller
         }
 
         $validated = $request->validate([
-            'id_lapangan' => 'required|exists:lapangan,id_lapangan',
-
-            'tanggal' => [
-                'required',
-                'date',
-                'after_or_equal:today',
-                'before_or_equal:'.now()->addDays(30)->toDateString(),
-            ],
-
-            'jam_mulai' => 'required|date_format:H:i',
-            'durasi' => 'required|integer|min:1|max:14',
+            'id_jadwal' => 'required|integer|exists:jadwal,id_jadwal',
         ]);
 
-        $lapangan = Lapangan::findOrFail(
-            $validated['id_lapangan']
-        );
+        $jadwal = DB::table('jadwal')
+            ->join('lapangan', 'jadwal.id_lapangan', '=', 'lapangan.id_lapangan')
+            ->where('jadwal.id_jadwal', $validated['id_jadwal'])
+            ->where('jadwal.status_jadwal', 'tersedia')
+            ->where('lapangan.status_lapangan', 'tersedia')
+            ->select('jadwal.*')
+            ->first();
 
-        if ($lapangan->status_lapangan !== 'tersedia') {
-            return back()->withInput()->withErrors([
-                'id_lapangan' => 'Lapangan sedang tidak tersedia.',
+        if (! $jadwal) {
+            throw ValidationException::withMessages([
+                'id_jadwal' => 'Jadwal tidak tersedia. Silakan pilih jadwal lain.',
             ]);
         }
 
-        // Validasi waktu dan durasi
-        $waktu = $this->validasiWaktu(
-            $validated['tanggal'],
-            $validated['jam_mulai'],
-            $validated['durasi']
-        );
-
-        // Periksa jadwal bentrok
-        if ($this->cekBentrok(
-            $lapangan->id_lapangan,
-            $validated['tanggal'],
-            $waktu['jam_mulai'],
-            $waktu['jam_selesai']
-        )) {
-            return back()->withInput()->withErrors([
-                'jam_mulai' => 'Jadwal sudah dipesan. Silakan pilih jam lain.',
+        $tanggalJadwal = Carbon::parse($jadwal->tanggal)->toDateString();
+        if (
+            $tanggalJadwal < now()->toDateString() ||
+            $tanggalJadwal > now()->addDays(30)->toDateString()
+        ) {
+            throw ValidationException::withMessages([
+                'id_jadwal' => 'Jadwal berada di luar periode pemesanan.',
             ]);
         }
 
-        // Hitung total harga
-        $totalHarga = $lapangan->harga_per_jam
-            * $validated['durasi'];
-
-        // Data jadwal sementara untuk tampilan
-        $jadwal = (object) [
-            'id_jadwal' => null,
-            'id_lapangan' => $lapangan->id_lapangan,
-            'tanggal' => $validated['tanggal'],
-            'jam_mulai' => $waktu['jam_mulai'],
-            'jam_selesai' => $waktu['jam_selesai'],
-            'durasi' => $validated['durasi'],
-        ];
+        $lapangan = Lapangan::findOrFail($jadwal->id_lapangan);
+        $durasi = $this->hitungDurasiJadwal($jadwal->jam_mulai, $jadwal->jam_selesai);
+        $totalHarga = $lapangan->harga_per_jam * $durasi;
 
         return view('customer.form_booking', [
             'lapangan' => $lapangan,
             'jadwal' => $jadwal,
-            'tanggal' => $validated['tanggal'],
-            'jam_mulai' => $validated['jam_mulai'],
-            'jam_selesai' => $waktu['jam_selesai'],
-            'durasi' => $validated['durasi'],
+            'tanggal' => $tanggalJadwal,
+            'jam_mulai' => $jadwal->jam_mulai,
+            'jam_selesai' => $jadwal->jam_selesai,
+            'durasi' => $durasi,
             'totalHarga' => $totalHarga,
             'user' => Auth::user(),
         ]);
@@ -177,24 +102,14 @@ class CustomerController extends Controller
     // ==========================================
     // SIMPAN BOOKING
     // ==========================================
-    public function simpanBooking(Request $request)
+    public function simpanBooking(Request $request): RedirectResponse
     {
         if (! Auth::check()) {
             return redirect()->route('login');
         }
 
         $validated = $request->validate([
-            'id_lapangan' => 'required|exists:lapangan,id_lapangan',
-
-            'tanggal' => [
-                'required',
-                'date',
-                'after_or_equal:today',
-                'before_or_equal:'.now()->addDays(30)->toDateString(),
-            ],
-
-            'jam_mulai' => 'required|date_format:H:i',
-            'durasi' => 'required|integer|min:1|max:14',
+            'id_jadwal' => 'required|integer|exists:jadwal,id_jadwal',
         ]);
 
         $idUser = Auth::id();
@@ -203,66 +118,57 @@ class CustomerController extends Controller
             $validated,
             $idUser
         ) {
+            $jadwal = DB::table('jadwal')
+                ->where('id_jadwal', $validated['id_jadwal'])
+                ->lockForUpdate()
+                ->first();
 
-            // Kunci data lapangan agar booking bersamaan
-            // pada lapangan yang sama diproses bergantian.
-            $lapangan = Lapangan::where(
-                'id_lapangan',
-                $validated['id_lapangan']
-            )->lockForUpdate()->firstOrFail();
+            if (! $jadwal || $jadwal->status_jadwal !== 'tersedia') {
+                throw ValidationException::withMessages([
+                    'id_jadwal' => 'Jadwal sudah tidak tersedia. Silakan pilih jadwal lain.',
+                ]);
+            }
+
+            $tanggalJadwal = Carbon::parse($jadwal->tanggal)->toDateString();
+            if (
+                $tanggalJadwal < now()->toDateString() ||
+                $tanggalJadwal > now()->addDays(30)->toDateString()
+            ) {
+                throw ValidationException::withMessages([
+                    'id_jadwal' => 'Jadwal berada di luar periode pemesanan.',
+                ]);
+            }
+
+            $lapangan = Lapangan::where('id_lapangan', $jadwal->id_lapangan)
+                ->lockForUpdate()
+                ->firstOrFail();
 
             if ($lapangan->status_lapangan !== 'tersedia') {
                 throw ValidationException::withMessages([
-                    'id_lapangan' => 'Lapangan tidak tersedia.',
+                    'id_jadwal' => 'Lapangan tidak tersedia.',
                 ]);
             }
 
-            // Validasi ulang waktu
-            $waktu = $this->validasiWaktu(
-                $validated['tanggal'],
-                $validated['jam_mulai'],
-                $validated['durasi']
-            );
+            $durasi = $this->hitungDurasiJadwal($jadwal->jam_mulai, $jadwal->jam_selesai);
 
-            // Cek ulang bentrok sebelum menyimpan
-            if ($this->cekBentrok(
-                $lapangan->id_lapangan,
-                $validated['tanggal'],
-                $waktu['jam_mulai'],
-                $waktu['jam_selesai']
-            )) {
-                throw ValidationException::withMessages([
-                    'jam_mulai' => 'Jadwal sudah dipesan. Silakan pilih waktu lain.',
+            $totalHarga = $lapangan->harga_per_jam * $durasi;
+
+            DB::table('jadwal')
+                ->where('id_jadwal', $jadwal->id_jadwal)
+                ->update([
+                    'status_jadwal' => 'dipesan',
+                    'updated_at' => now(),
                 ]);
-            }
 
-            // Hitung harga otomatis
-            $totalHarga = $lapangan->harga_per_jam
-                * $validated['durasi'];
-
-            // Buat jadwal baru secara otomatis
-            $idJadwal = DB::table('jadwal')->insertGetId([
-                'id_lapangan' => $lapangan->id_lapangan,
-                'tanggal' => $validated['tanggal'],
-                'jam_mulai' => $waktu['jam_mulai'],
-                'jam_selesai' => $waktu['jam_selesai'],
-                'status_jadwal' => 'dipesan',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            // Simpan data booking
-            $idBooking = DB::table('booking')->insertGetId([
+            return DB::table('booking')->insertGetId([
                 'id_user' => $idUser,
-                'id_jadwal' => $idJadwal,
+                'id_jadwal' => $jadwal->id_jadwal,
                 'tanggal_booking' => now(),
                 'total_harga' => $totalHarga,
                 'status_booking' => 'menunggu',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-
-            return $idBooking;
         });
 
         return redirect()
@@ -275,10 +181,38 @@ class CustomerController extends Controller
             );
     }
 
+    private function hitungDurasiJadwal(string $jamMulai, string $jamSelesai): int
+    {
+        $mulai = Carbon::parse($jamMulai);
+        $selesai = Carbon::parse($jamSelesai);
+
+        if (
+            $selesai <= $mulai ||
+            $mulai->minute !== 0 ||
+            $selesai->minute !== 0 ||
+            $mulai->hour < 8 ||
+            $selesai->hour > 22
+        ) {
+            throw ValidationException::withMessages([
+                'id_jadwal' => 'Durasi jadwal tidak valid.',
+            ]);
+        }
+
+        $durasi = (int) $mulai->diffInHours($selesai);
+
+        if ($durasi < 1 || $durasi > 14) {
+            throw ValidationException::withMessages([
+                'id_jadwal' => 'Durasi jadwal tidak valid.',
+            ]);
+        }
+
+        return $durasi;
+    }
+
     // ==========================================
     // HALAMAN PEMBAYARAN
     // ==========================================
-    public function pembayaran($id_booking)
+    public function pembayaran(int $id_booking): View|RedirectResponse
     {
         if (! Auth::check()) {
             return redirect()->route('login');
@@ -314,7 +248,7 @@ class CustomerController extends Controller
     // ==========================================
     // UPLOAD BUKTI PEMBAYARAN
     // ==========================================
-    public function uploadBuktiPembayaran(Request $request, $id_booking)
+    public function uploadBuktiPembayaran(Request $request, int $id_booking): RedirectResponse
     {
         if (! Auth::check()) {
             return redirect()->route('login');
@@ -363,7 +297,7 @@ class CustomerController extends Controller
     // ==========================================
     // STATUS PEMESANAN
     // ==========================================
-    public function statusPemesanan($id_booking)
+    public function statusPemesanan(int $id_booking): View|RedirectResponse
     {
         if (! Auth::check()) {
             return redirect()->route('login');
@@ -401,7 +335,7 @@ class CustomerController extends Controller
     // ==========================================
     // BUKTI PEMESANAN
     // ==========================================
-    public function buktiPemesanan($id_booking)
+    public function buktiPemesanan(int $id_booking): View|RedirectResponse
     {
         if (! Auth::check()) {
             return redirect()->route('login');
@@ -441,7 +375,7 @@ class CustomerController extends Controller
     // ==========================================
     // RIWAYAT BOOKING
     // ==========================================
-    public function riwayat()
+    public function riwayat(): View|RedirectResponse
     {
         if (! Auth::check()) {
             return redirect()->route('login');

@@ -54,17 +54,7 @@
                     @csrf
 
                     <!-- DATA UNTUK CONTROLLER -->
-                    <input type="hidden"
-                           name="id_lapangan"
-                           value="{{ $lapangan->id_lapangan }}">
-
-                    <input type="hidden"
-                           name="tanggal"
-                           value="{{ $tanggal }}">
-
-                    <input type="hidden"
-                           name="jam_mulai"
-                           value="{{ $jam_mulai }}">
+                    <input type="hidden" name="id_jadwal" value="{{ $jadwal->id_jadwal }}">
 
                     <div class="space-y-5">
 
@@ -119,44 +109,12 @@
                                    class="w-full bg-slate-100 border rounded-lg px-4 py-3 text-sm">
                         </div>
 
-                        <!-- PILIH DURASI -->
                         <div>
                             <label class="block text-sm font-semibold mb-2">
-                                Durasi booking
+                                Durasi dan jam bermain
                             </label>
-
-                            <select name="durasi"
-                                    id="durasi"
-                                    required
-                                    class="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm">
-
-                                @php
-                                    $jamMulai = (int) substr($jam_mulai, 0, 2);
-                                    $maksDurasi = 22 - $jamMulai;
-                                @endphp
-
-                                @for ($i = 1; $i <= $maksDurasi; $i++)
-                                    <option value="{{ $i }}"
-                                        {{ old('durasi', $durasi ?? 1) == $i ? 'selected' : '' }}>
-                                        {{ $i }} jam
-                                    </option>
-                                @endfor
-
-                            </select>
-
-                            <p class="text-xs text-slate-500 mt-2">
-                                Durasi bermain dapat dipilih sesuai kebutuhan.
-                            </p>
-                        </div>
-
-                        <!-- JAM SELESAI -->
-                        <div>
-                            <label class="block text-sm font-semibold mb-2">
-                                Jam selesai
-                            </label>
-
                             <input type="text"
-                                   id="jamSelesai"
+                                   value="{{ $durasi }} jam ({{ substr($jam_mulai, 0, 5) }}–{{ substr($jam_selesai, 0, 5) }})"
                                    readonly
                                    class="w-full bg-slate-100 border rounded-lg px-4 py-3 text-sm">
                         </div>
@@ -185,12 +143,12 @@
 
                 <div class="flex justify-between text-sm mb-3">
                     <span class="text-slate-500">Durasi</span>
-                    <span id="durasiText">1 jam</span>
+                    <span>{{ $durasi }} jam</span>
                 </div>
 
                 <div class="flex justify-between text-sm mb-5">
                     <span class="text-slate-500">Jam booking</span>
-                    <span id="jamText"></span>
+                    <span>{{ substr($jam_mulai, 0, 5) }}–{{ substr($jam_selesai, 0, 5) }}</span>
                 </div>
 
                 <hr class="mb-5">
@@ -200,7 +158,7 @@
                 </p>
 
                 <p class="text-2xl font-bold mb-8" id="totalHarga">
-                    Rp{{ number_format($lapangan->harga_per_jam, 0, ',', '.') }}
+                    Rp{{ number_format($totalHarga, 0, ',', '.') }}
                 </p>
 
                 <button type="submit"
@@ -213,46 +171,6 @@
 
         </div>
     </main>
-
-    <script>
-        const durasiSelect = document.getElementById('durasi');
-        const jamMulaiInput = document.getElementById('jamMulai');
-        const jamSelesaiInput = document.getElementById('jamSelesai');
-
-        const durasiText = document.getElementById('durasiText');
-        const jamText = document.getElementById('jamText');
-        const totalHarga = document.getElementById('totalHarga');
-
-        const hargaPerJam = {{ (float) $lapangan->harga_per_jam }};
-
-        function updateRingkasan() {
-            const durasi = parseInt(durasiSelect.value);
-            const jamMulai = jamMulaiInput.value;
-
-            const jam = parseInt(jamMulai.split(':')[0]);
-            const menit = jamMulai.split(':')[1];
-
-            const jamAkhir = jam + durasi;
-
-            const jamSelesai =
-                String(jamAkhir).padStart(2, '0') + ':' + menit;
-
-            jamSelesaiInput.value = jamSelesai;
-
-            durasiText.textContent = durasi + ' jam';
-
-            jamText.textContent = jamMulai + ' - ' + jamSelesai;
-
-            const total = hargaPerJam * durasi;
-
-            totalHarga.textContent = 'Rp' +
-                new Intl.NumberFormat('id-ID').format(total);
-        }
-
-        durasiSelect.addEventListener('change', updateRingkasan);
-
-        updateRingkasan();
-    </script>
 
 </body>
 </html>

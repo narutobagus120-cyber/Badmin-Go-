@@ -59,78 +59,31 @@
                 <form action="{{ route('booking.form') }}" method="POST">
                     @csrf
 
-                    <input type="hidden" name="id_lapangan"
-                           value="{{ $lapangan->id_lapangan }}">
-
-                    <!-- PILIH TANGGAL -->
                     <div class="mb-6">
                         <label class="block text-sm font-semibold mb-3">
-                            Pilih tanggal bermain
-                        </label>
-
-                        <input
-                            type="date"
-                            name="tanggal"
-                            min="{{ now()->format('Y-m-d') }}"
-                            max="{{ now()->addDays(30)->format('Y-m-d') }}"
-                            value="{{ old('tanggal', now()->format('Y-m-d')) }}"
-                            required
-                            class="w-full bg-slate-100 border rounded-lg px-4 py-3 text-sm"
-                        >
-
-                        <p class="text-xs text-slate-500 mt-2">
-                            Pemesanan tersedia hingga 30 hari ke depan.
-                        </p>
-                    </div>
-
-                    <!-- PILIH JAM -->
-                    <div class="mb-6">
-                        <label class="block text-sm font-semibold mb-3">
-                            Pilih jam mulai
+                            Pilih jadwal tersedia
                         </label>
 
                         <select
-                            name="jam_mulai"
+                            name="id_jadwal"
                             required
                             class="w-full bg-slate-100 border rounded-lg px-4 py-3 text-sm"
+                            @disabled($jadwal->isEmpty())
                         >
-                            <option value="">-- Pilih jam mulai --</option>
-
-                            @for ($jam = 8; $jam <= 21; $jam++)
-                                <option
-                                    value="{{ sprintf('%02d:00', $jam) }}"
-                                    {{ old('jam_mulai') == sprintf('%02d:00', $jam) ? 'selected' : '' }}
-                                >
-                                    {{ sprintf('%02d:00', $jam) }}
+                            @forelse ($jadwal as $slot)
+                                <option value="{{ $slot->id_jadwal }}"
+                                    {{ old('id_jadwal') == $slot->id_jadwal ? 'selected' : '' }}>
+                                    {{ \Carbon\Carbon::parse($slot->tanggal)->format('d-m-Y') }}
+                                    • {{ substr($slot->jam_mulai, 0, 5) }}–{{ substr($slot->jam_selesai, 0, 5) }}
                                 </option>
-                            @endfor
+                            @empty
+                                <option value="">Belum ada jadwal tersedia</option>
+                            @endforelse
                         </select>
 
                         <p class="text-xs text-slate-500 mt-2">
-                            Jam operasional lapangan: 08.00–22.00.
+                            Jadwal tersedia dapat dipesan hingga 30 hari ke depan.
                         </p>
-                    </div>
-
-                    <!-- PILIH DURASI -->
-                    <div class="mb-6">
-                        <label class="block text-sm font-semibold mb-3">
-                            Durasi bermain
-                        </label>
-
-                        <select
-                            name="durasi"
-                            required
-                            class="w-full bg-slate-100 border rounded-lg px-4 py-3 text-sm"
-                        >
-                            <option value="">-- Pilih durasi --</option>
-
-                            @for ($i = 1; $i <= 14; $i++)
-                                <option value="{{ $i }}"
-                                    {{ old('durasi', 1) == $i ? 'selected' : '' }}>
-                                    {{ $i }} jam
-                                </option>
-                            @endfor
-                        </select>
                     </div>
 
                     <!-- HARGA -->
@@ -141,6 +94,7 @@
                     <button
                         type="submit"
                         class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg"
+                        @disabled($jadwal->isEmpty())
                     >
                         Pesan Sekarang
                     </button>

@@ -72,12 +72,13 @@ class PetugasController extends Controller
                     'status_booking' => $status === 'berhasil' ? 'dikonfirmasi' : 'dibatalkan',
                     'updated_at' => now(),
                 ]);
+
         });
 
         $message = $status === 'berhasil'
             ? 'Pembayaran berhasil diverifikasi.'
             : 'Pembayaran ditolak dan status booking diperbarui.';
 
-        return redirect()->route('petugas.dashboard')->with('success', $message);
+        return redirect()->route('admin.dashboard')->with('success', $message);
     }
 }

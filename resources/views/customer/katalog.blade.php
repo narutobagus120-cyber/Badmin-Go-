@@ -25,18 +25,21 @@
                 Beranda
             </a>
 
-            <a href="{{ route('booking.riwayat') }}"
-               class="bg-[#1976ff] hover:bg-[#1268e5] px-3 md:px-4 py-2 rounded-md transition">
-                Riwayat
-            </a>
-
             @auth
+                @if (auth()->user()->role === 'petugas')
+                    <a href="{{ route('admin.dashboard') }}"
+                       class="bg-[#1976ff] hover:bg-[#1268e5] px-3 md:px-4 py-2 rounded-md transition">
+                        Dashboard Admin
+                    </a>
+                @else
+                    <a href="{{ route('booking.riwayat') }}"
+                       class="bg-[#1976ff] hover:bg-[#1268e5] px-3 md:px-4 py-2 rounded-md transition">
+                        Riwayat
+                    </a>
+                @endif
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf
-                    <button type="submit"
-                            class="bg-[#1976ff] hover:bg-[#1268e5] px-3 md:px-4 py-2 rounded-md transition">
-                        Keluar
-                    </button>
+                    <button type="submit" class="bg-[#1976ff] hover:bg-[#1268e5] px-3 md:px-4 py-2 rounded-md transition">Keluar</button>
                 </form>
             @else
                 <a href="{{ route('login') }}"

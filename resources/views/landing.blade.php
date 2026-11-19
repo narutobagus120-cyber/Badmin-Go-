@@ -14,7 +14,11 @@
         <div class="logo">BADMIN <span>GO.</span></div>
         <nav>
             @auth
-                <a href="{{ route('katalog') }}" class="btn-login">Katalog</a>
+                @if (auth()->user()->role === 'petugas')
+                    <a href="{{ route('admin.dashboard') }}" class="btn-login">Dashboard Admin</a>
+                @else
+                    <a href="{{ route('customer.dashboard') }}" class="btn-login">Dashboard User</a>
+                @endif
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf
                     <button type="submit" class="btn-register">Keluar</button>
@@ -37,9 +41,15 @@
                 dan booking dalam beberapa langkah mudah.
             </p>
 
-            <a href="{{ route('login') }}" class="btn-booking">
-                Booking Sekarang →
-            </a>
+            @auth
+                @if (auth()->user()->role === 'petugas')
+                    <a href="{{ route('admin.dashboard') }}" class="btn-booking">Dashboard Admin →</a>
+                @else
+                    <a href="{{ route('customer.dashboard') }}" class="btn-booking">Booking Sekarang →</a>
+                @endif
+            @else
+                <a href="{{ route('login') }}" class="btn-booking">Booking Sekarang →</a>
+            @endauth
 
             <p class="features">
                 CEPAT &nbsp; • &nbsp; MUDAH &nbsp; • &nbsp; TANPA RIBET

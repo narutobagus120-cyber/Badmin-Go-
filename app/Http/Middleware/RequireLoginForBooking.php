@@ -16,6 +16,10 @@ class RequireLoginForBooking
                 ->with('error', 'Anda harus login terlebih dahulu untuk melanjutkan booking.');
         }
 
+        if (Auth::user()->role !== 'pelanggan') {
+            abort(403, 'Akses booking hanya untuk pelanggan.');
+        }
+
         return $next($request);
     }
 }
